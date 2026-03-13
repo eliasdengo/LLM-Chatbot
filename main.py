@@ -1,8 +1,8 @@
 import os
-from turtle import st
 from dotenv import load_dotenv
-import  google.generativeai  as genai
+import google.generativeai as genai
 import streamlit as st
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -16,7 +16,7 @@ st.set_page_config(
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=GOOGLE_API_KEY)
-model=genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 # Function to Translate Role between gemini and streamlit 
 def translate_role(role):
@@ -26,22 +26,35 @@ def translate_role(role):
         return "assistant"
     else:
         return "unknown"
+
 # initial chat session in streamlit if not already exists
-if "messages" not in st.session_state:
-    st.session_state.messages = model.start_chat(history=[])
+if "chat_session" not in st.session_state:
+    st.session_state.chat_session = model.start_chat(history=[])
+    st.session_state.messages = []
 
 # display chat bot title in the page 
 st.title("ChatBot :robot:")
 
 # display chat history in the page 
-for message in st.session_state.messages.history:
+for message in st.session_state.messages:
     role = translate_role(message.role)
     with st.chat_message(role):
         st.markdown(message.parts[0].text)
-# input form for user to send message to the chat bot
-with st.form(key="chat_form", clear_on_submit=True):
-    user_input = st.text_input("You:", "")
-    submit_button = st.form_submit_button(label="Send")
-    if submit_button and user_input:
-        # get response from the chat bot
-        response = st.session_state.messages.send_message(user_input)
+
+# input for user to send message to the chat bot
+user_input = st.chat_input("Type your message here...")
+
+if user_input:
+    # Add user message to display
+    with st.chat_message("user"):
+        st.markdown(user_input)
+    
+    # get response from the chat bot
+    response = st.session_state.chat_session.send_message(user_input)
+    
+    # Add assistant response to display
+    with st.chat_message("assistant"):
+        st.markdown(response.text)
+    
+    # Store messages in session state
+    st.session_state.messages = st.session_state.chat_session.history
