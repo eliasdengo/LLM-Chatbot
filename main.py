@@ -1,46 +1,51 @@
 """
-Simple ChatBot using Google's Gemini AI
+ChatBot using Google's Gemini AI
+Compatible with Python 3.9+
 """
-
-import os
 import streamlit as st
 import google.generativeai as genai
+import os
 
-# Configure page - MUST be the first Streamlit command
+# Page config must be first
 st.set_page_config(
-    page_title="ChatBot",
+    page_title="Gemini ChatBot",
     page_icon="🤖",
     layout="centered"
 )
 
 # Title
-st.title("🤖 ChatBot")
+st.title("🤖 Gemini ChatBot")
 
-# Get API key from secrets
+# Get API key from secrets (for Streamlit Cloud)
 try:
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-except Exception as e:
-    st.error("""
-    ⚠️ Google API Key not found!
+except:
+    # Fall back to environment variable (for local development)
+    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
     
-    Please add your API key in Streamlit Cloud Secrets:
-    1. Go to your app dashboard
-    2. Click on 'Manage app' → 'Settings' → 'Secrets'
-    3. Add:
-    
-    GOOGLE_API_KEY = "your-actual-api-key-here"
-    """)
-    st.stop()
+    if not GOOGLE_API_KEY:
+        st.error("""
+        ⚠️ Google API Key not found!
+        
+        For Streamlit Cloud:
+        1. Go to your app dashboard
+        2. Click on 'Manage app' → 'Settings' → 'Secrets'
+        3. Add: GOOGLE_API_KEY = "your-api-key"
+        
+        For local development:
+        Create a .env file with: GOOGLE_API_KEY=your-api-key
+        """)
+        st.stop()
 
 # Configure Gemini
 try:
     genai.configure(api_key=GOOGLE_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
-    st.error(f"Failed to initialize Gemini: {str(e)}")
+    st.error(f"Failed to initialize Gemini: {e}")
     st.stop()
 
-# Initialize session state
+# Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
     st.session_state.chat = model.start_chat(history=[])
@@ -51,7 +56,9 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # Chat input
-if prompt := st.chat_input("Type your message here..."):
+prompt = st.chat_input("What would you like to know?")
+
+if prompt:
     # Add user message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -67,4 +74,4 @@ if prompt := st.chat_input("Type your message here..."):
                     {"role": "assistant", "content": response.text}
                 )
             except Exception as e:
-                st.error(f"Error: {str(e)}")
+                st.error(f"Error: {e}")
