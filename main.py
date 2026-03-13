@@ -1,10 +1,6 @@
 import os
-from dotenv import load_dotenv
-import google.generativeai as genai
 import streamlit as st
-
-# Load environment variables from .env file
-load_dotenv()
+import google.generativeai as genai
 
 # configure streamlit page setting 
 st.set_page_config(
@@ -14,7 +10,15 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+# Get API key - works both locally and on Streamlit Cloud
+# For local development, you can still use .env or set environment variable
+# For Streamlit Cloud, set this in Secrets (see instructions below)
+GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY", os.getenv("GOOGLE_API_KEY"))
+
+if not GOOGLE_API_KEY:
+    st.error("Please set your GOOGLE_API_KEY in environment variables or Streamlit secrets")
+    st.stop()
+
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
@@ -30,6 +34,8 @@ def translate_role(role):
 # initial chat session in streamlit if not already exists
 if "chat_session" not in st.session_state:
     st.session_state.chat_session = model.start_chat(history=[])
+    
+if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # display chat bot title in the page 
@@ -56,5 +62,6 @@ if user_input:
     with st.chat_message("assistant"):
         st.markdown(response.text)
     
-    # Store messages in session state
+    # Update messages in session state
     st.session_state.messages = st.session_state.chat_session.history
+    st.rerun()
