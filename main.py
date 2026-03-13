@@ -2,25 +2,11 @@
 Simple ChatBot using Google's Gemini AI
 """
 
-import sys
-import subprocess
-
-# Try to install missing packages automatically (for debugging)
-try:
-    import streamlit as st
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "streamlit"])
-    import streamlit as st
-
-try:
-    import google.generativeai as genai
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "google-generativeai"])
-    import google.generativeai as genai
-
 import os
+import streamlit as st
+import google.generativeai as genai
 
-# Configure page
+# Configure page - MUST be the first Streamlit command
 st.set_page_config(
     page_title="ChatBot",
     page_icon="🤖",
@@ -33,7 +19,7 @@ st.title("🤖 ChatBot")
 # Get API key from secrets
 try:
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-except:
+except Exception as e:
     st.error("""
     ⚠️ Google API Key not found!
     
