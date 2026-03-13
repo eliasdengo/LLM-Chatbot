@@ -1,77 +1,78 @@
 """
-ChatBot using Google's Gemini AI
-Compatible with Python 3.9+
+Simple ChatBot using Google's Gemini AI
 """
 import streamlit as st
-import google.generativeai as genai
-import os
 
 # Page config must be first
 st.set_page_config(
-    page_title="Gemini ChatBot",
+    page_title="Simple ChatBot",
     page_icon="🤖",
     layout="centered"
 )
 
-# Title
-st.title("🤖 Gemini ChatBot")
+# Try to import google.generativeai
+try:
+    import google.generativeai as genai
+    GENAI_AVAILABLE = True
+except ImportError:
+    GENAI_AVAILABLE = False
+    st.error("""
+    ❌ Google Generative AI package not found!
+    
+    This app requires 'google-generativeai' to be installed.
+    
+    If you're the app owner:
+    1. Make sure requirements.txt exists with: google-generativeai
+    2. Check deployment logs for installation errors
+    3. Try specifying an older Python version in runtime.txt
+    """)
+    st.stop()
 
-# Get API key from secrets (for Streamlit Cloud)
+import os
+
+st.title("🤖 Simple ChatBot")
+
+# Get API key
 try:
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+    st.success("✅ API key found!")
 except:
-    # Fall back to environment variable (for local development)
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-    
     if not GOOGLE_API_KEY:
-        st.error("""
-        ⚠️ Google API Key not found!
-        
-        For Streamlit Cloud:
-        1. Go to your app dashboard
-        2. Click on 'Manage app' → 'Settings' → 'Secrets'
-        3. Add: GOOGLE_API_KEY = "your-api-key"
-        
-        For local development:
-        Create a .env file with: GOOGLE_API_KEY=your-api-key
-        """)
+        st.error("❌ No API key found. Please add it to secrets.")
         st.stop()
 
 # Configure Gemini
 try:
     genai.configure(api_key=GOOGLE_API_KEY)
     model = genai.GenerativeModel('gemini-1.5-flash')
+    st.success("✅ Gemini initialized!")
 except Exception as e:
-    st.error(f"Failed to initialize Gemini: {e}")
+    st.error(f"❌ Failed to initialize Gemini: {e}")
     st.stop()
 
-# Initialize chat history
+# Initialize chat
 if "messages" not in st.session_state:
     st.session_state.messages = []
     st.session_state.chat = model.start_chat(history=[])
 
-# Display chat history
+# Display messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
 # Chat input
-prompt = st.chat_input("What would you like to know?")
-
-if prompt:
+if prompt := st.chat_input("Type your message..."):
     # Add user message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
     
-    # Get bot response
+    # Get response
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            try:
-                response = st.session_state.chat.send_message(prompt)
-                st.markdown(response.text)
-                st.session_state.messages.append(
-                    {"role": "assistant", "content": response.text}
-                )
-            except Exception as e:
-                st.error(f"Error: {e}")
+            response = st.session_state.chat.send_message(prompt)
+            st.markdown(response.text)
+            st.session_state.messages.append(
+                {"role": "assistant", "content": response.text}
+            )
